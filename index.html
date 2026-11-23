@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Park&amp;Ride Live Availability</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: rgba(20, 28, 51, 0.85);
+      --card-border: rgba(148, 163, 184, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 45%),
+        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.12), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .title-group p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--card-border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--good);
+      box-shadow: 0 0 10px var(--good);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    select, button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    select:focus, button:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.12s ease, border-color 0.15s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    .facility-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .facility-id {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .hero-metric {
+      margin: 24px 0 18px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .available-num {
+      font-size: 3.6rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--good);
+    }
+
+    .available-label {
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 12px;
+      background: rgba(148, 163, 184, 0.16);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--good);
+      border-radius: 999px;
+      transition: width 0.4s ease, background-color 0.3s ease;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .stat-box .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .stat-box .val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .footer-meta {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(148, 163, 184, 0.12);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .error-banner {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fecaca;
+      font-size: 0.85rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title-group">
+        <h1>Park&amp;Ride Live</h1>
+        <p>Auto-refreshes every 3 seconds</p>
+      </div>
+      <div class="live-pill">
+        <span class="dot" id="statusDot"></span>
+        <span id="countdownText">Syncing in 3s</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <select id="facilitySelect" aria-label="Select car park">
+        <option value="">Loading car parks...</option>
+      </select>
+      <button id="refreshBtn" type="button">Refresh Now</button>
+    </div>
+
+    <div class="card">
+      <div class="facility-name" id="facilityName">Loading...</div>
+      <div class="facility-id" id="facilityMeta">Facility ID: --</div>
+
+      <div class="hero-metric">
+        <span class="available-num" id="availableCount">--</span>
+        <span class="available-label">spots available</span>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="label">Total Capacity</div>
+          <div class="val" id="capacityCount">--</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Occupied</div>
+          <div class="val" id="occupiedCount">--</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Free Rate</div>
+          <div class="val" id="freePercent">--%</div>
+        </div>
+      </div>
+
+      <div class="footer-meta">
+        <span id="feedTime">Feed time: --</span>
+        <span id="lastChecked">Checked: --</span>
+      </div>
+
+      <div class="error-banner" id="errorBanner"></div>
+    </div>
+  </div>
+
+  <script>
+    // Point this to your deployed Cloudflare Worker URL (no API key needed here)
+    const WORKER_URL = "https://parknride.mrkarimi80.workers.dev";
+    const REFRESH_SECONDS = 3;
+
+    // Default to Hornsby (ID 25); change to your preferred facility ID string
+    let selectedFacilityId = "25";
+    let allFacilities = [];
+    let secondsLeft = REFRESH_SECONDS;
+
+    const el = {
+      select: document.getElementById("facilitySelect"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      facilityName: document.getElementById("facilityName"),
+      facilityMeta: document.getElementById("facilityMeta"),
+      availableCount: document.getElementById("availableCount"),
+      capacityCount: document.getElementById("capacityCount"),
+      occupiedCount: document.getElementById("occupiedCount"),
+      freePercent: document.getElementById("freePercent"),
+      progressFill: document.getElementById("progressFill"),
+      feedTime: document.getElementById("feedTime"),
+      lastChecked: document.getElementById("lastChecked"),
+      countdownText: document.getElementById("countdownText"),
+      statusDot: document.getElementById("statusDot"),
+      errorBanner: document.getElementById("errorBanner"),
+    };
+
+    function showError(msg) {
+      el.errorBanner.textContent = msg;
+      el.errorBanner.style.display = "block";
+      el.statusDot.style.background = "var(--bad)";
+      el.statusDot.style.boxShadow = "0 0 10px var(--bad)";
+    }
+
+    function clearError() {
+      el.errorBanner.style.display = "none";
+      el.statusDot.style.background = "var(--good)";
+      el.statusDot.style.boxShadow = "0 0 10px var(--good)";
+    }
+
+    function populateDropdown(facilities) {
+      const sorted = [...facilities].sort((a, b) =>
+        String(a.facility_name || "").localeCompare(String(b.facility_name || ""))
+      );
+
+      el.select.innerHTML = "";
+      for (const f of sorted) {
+        const id = String(f.facility_id);
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = `${f.facility_name} (ID ${id})`;
+        if (id === selectedFacilityId) {
+          opt.selected = true;
+        }
+        el.select.appendChild(opt);
+      }
+
+      if (!sorted.some(f => String(f.facility_id) === selectedFacilityId) && sorted.length > 0) {
+        selectedFacilityId = String(sorted[0].facility_id);
+        el.select.value = selectedFacilityId;
+      }
+    }
+
+    function renderFacility(facility) {
+      if (!facility) {
+        el.facilityName.textContent = "Car park not found";
+        el.availableCount.textContent = "--";
+        return;
+      }
+
+      const capacity = Number(facility.spots || 0);
+      const occupied = Number(facility.occupancy?.total || 0);
+      const available = Math.max(0, capacity - occupied);
+      const freePct = capacity > 0 ? Math.round((available / capacity) * 100) : 0;
+
+      let accentColor = "var(--good)";
+      if (freePct < 10 || available < 20) {
+        accentColor = "var(--bad)";
+      } else if (freePct < 30 || available < 60) {
+        accentColor = "var(--warn)";
+      }
+
+      el.facilityName.textContent = facility.facility_name || "Unnamed Car Park";
+      el.facilityMeta.textContent = `Facility ID: ${facility.facility_id}`;
+      el.availableCount.textContent = available.toLocaleString();
+      el.availableCount.style.color = accentColor;
+
+      el.capacityCount.textContent = capacity.toLocaleString();
+      el.occupiedCount.textContent = occupied.toLocaleString();
+      el.freePercent.textContent = `${freePct}%`;
+
+      el.progressFill.style.width = `${freePct}%`;
+      el.progressFill.style.backgroundColor = accentColor;
+
+      const updatedRaw = facility.MessageDate || facility.time || "--";
+      el.feedTime.textContent = `Feed time: ${updatedRaw}`;
+      el.lastChecked.textContent = `Checked: ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function fetchAvailability() {
+      try {
+        const res = await fetch(WORKER_URL, {
+          headers: {
+            "Accept": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} (${res.statusText})`);
+        }
+
+        const data = await res.json();
+        allFacilities = Array.isArray(data) ? data : Object.values(data || {});
+
+        if (el.select.options.length <= 1 && allFacilities.length > 0) {
+          populateDropdown(allFacilities);
+        }
+
+        const match = allFacilities.find(
+          f => String(f.facility_id) === String(selectedFacilityId)
+        ) || allFacilities[0];
+
+        if (match) {
+          selectedFacilityId = String(match.facility_id);
+          renderFacility(match);
+        }
+
+        clearError();
+      } catch (err) {
+        showError(`Could not load live data: ${err.message}. Check your Cloudflare Worker URL and secret.`);
+      } finally {
+        secondsLeft = REFRESH_SECONDS;
+        el.countdownText.textContent = `Syncing in ${secondsLeft}s`;
+      }
+    }
+
+    el.select.addEventListener("change", (e) => {
+      selectedFacilityId = e.target.value;
+      const match = allFacilities.find(f => String(f.facility_id) === String(selectedFacilityId));
+      if (match) renderFacility(match);
+      fetchAvailability();
+    });
+
+    el.refreshBtn.addEventListener("click", () => {
+      fetchAvailability();
+    });
+
+    fetchAvailability();
+    setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        fetchAvailability();
+      } else {
+        el.countdownText.textContent = `Syncing in ${secondsLeft}s`;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
